@@ -727,13 +727,12 @@ Roland707M.Deck = function(deckNumbers, offset) {
         group: "[Channel" + deckNumbers + "]",
         outKey: "vu_meter",
         output: function(value, group, _control) {
-            // The red LEDs light up with MIDI values greater than 0x24. The
-            // maximum brightness is reached at value 0x28. Red LEDs should
-            // only be illuminated if the track is clipping.
+            // Scale the input down by 25% so LEDs are less sensitive
+            // Full LED range (0-127) is still available, just takes more volume to reach it
             if (engine.getValue(group, "peak_indicator") === 1) {
-                value = 0x28;
+                value = 127;  // Maximum brightness for clipping
             } else {
-                value = Math.round(value * 0x24);
+                value = Math.min(127, Math.round(value * 0.75 * 127));
             }
             this.send(value);
         },
