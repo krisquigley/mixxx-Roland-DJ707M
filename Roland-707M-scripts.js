@@ -549,11 +549,6 @@ Roland707M.Deck = function(deckNumbers, offset) {
         outKey: "keylock",
         currentRangeIndex: (Roland707M.tempoRange.indexOf(engine.getValue("[Channel" + deckNumbers + "]", "rateRange"))) ? Roland707M.tempoRange.indexOf(engine.getValue("[Channel" + deckNumbers + "]", "rateRange")) : 0,
         unshift: function() {
-            this.inKey = "keylock";
-            this.input = components.Button.prototype.input;
-            this.type = components.Button.prototype.types.toggle;
-        },
-        shift: function() {
             this.inKey = "rateRange";
             this.type = undefined;
             this.input = function(channel, control, value, status, _group) {
@@ -565,6 +560,11 @@ Roland707M.Deck = function(deckNumbers, offset) {
                     this.inSetValue(Roland707M.tempoRange[this.currentRangeIndex]);
                 }
             };
+        },
+        shift: function() {
+            this.inKey = "keylock";
+            this.input = components.Button.prototype.input;
+            this.type = components.Button.prototype.types.toggle;
         },
     });
 
