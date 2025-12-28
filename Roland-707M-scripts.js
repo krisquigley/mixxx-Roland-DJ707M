@@ -182,6 +182,9 @@ Roland707M.init = function() {
     for (let i = 0; i < 4; i++) {
         Roland707M.deck[i].reconnectComponents();
     }
+    
+    // Initialize browseEncoder to unshifted state
+    Roland707M.browseEncoder.unshift();
 };
 
 Roland707M.autoShowDecks = function(_value, _group, _control) {
@@ -274,7 +277,8 @@ Roland707M.browseEncoder = new components.Encoder({
     input: function(channel, control, value, status, _group) {
         switch (status) {
         case 0xBF: { // Rotate.
-            const rotateValue = (value === 127) ? -1 : ((value === 1) ? 1 : 0);
+            // Value > 64 means clockwise (right), value < 64 means counter-clockwise (left)
+            const rotateValue = (value > 64) ? 1 : (value < 64) ? -1 : 0;
             this.onKnobEvent(rotateValue);
             break;
         }
