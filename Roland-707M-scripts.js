@@ -737,6 +737,18 @@ Roland707M.Deck = function(deckNumbers, offset) {
             this.send(value);
         },
     });
+
+    this.crossfaderOrientation = function(channel, control, value, status, group) {
+        // A/THRU/B switch: 0x00 = Left (A), 0x01 = Center (THRU), 0x02 = Right (B)
+        const orientationMap = {
+            0x00: 0,  // Left side of crossfader
+            0x01: 1,  // Center (unaffected by crossfader)
+            0x02: 2   // Right side of crossfader
+        };
+        if (orientationMap.hasOwnProperty(value)) {
+            engine.setValue(group, "orientation", orientationMap[value]);
+        }
+    };
 };
 
 Roland707M.Deck.prototype = Object.create(components.Deck.prototype);
