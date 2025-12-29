@@ -1715,7 +1715,7 @@ Roland707M.RollMode.prototype = Object.create(
 Roland707M.ManualLoopMode = function (deck, offset) {
   components.ComponentContainer.call(this);
   this.ledControl = Roland707M.PadMode.MANUALLOOP;
-  var padColor = Roland707M.PadColor.PURPLE;
+  var padColor = Roland707M.PadColor.YELLOW;
 
   this.pads = [];
 
@@ -1988,7 +1988,7 @@ Roland707M.AutoLoopMode.prototype = Object.create(
 Roland707M.SavedLoopMode = function (deck, offset) {
   components.ComponentContainer.call(this);
   this.ledControl = Roland707M.PadMode.SAVEDLOOP;
-  var padColor = Roland707M.PadColor.BLUE;
+  var padColor = Roland707M.PadColor.YELLOW;
 
   this.pads = [];
 
