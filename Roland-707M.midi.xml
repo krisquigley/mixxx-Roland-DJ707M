@@ -141,7 +141,7 @@
                 <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
                 <description>DECK 1 PADS - CUE LOOP</description>
                 <status>0x94</status>
-                <midino>0x03</midino><!-- [SHIFT] + [HOT CUE] -->
+                <midino>0x01</midino><!-- [SHIFT] + [HOT CUE] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -859,7 +859,7 @@
                 <key>Roland707M.deck[2].padSection.padModeButtonPressed</key>
                 <description>DECK 3 PADS - CUE LOOP</description>
                 <status>0x96</status>
-                <midino>0x03</midino><!-- [SHIFT] + [HOT CUE] -->
+                <midino>0x01</midino><!-- [SHIFT] + [HOT CUE] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -1577,7 +1577,7 @@
                 <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
                 <description>DECK 2 PADS - CUE LOOP</description>
                 <status>0x95</status>
-                <midino>0x03</midino><!-- [SHIFT] + [HOT CUE] -->
+                <midino>0x01</midino><!-- [SHIFT] + [HOT CUE] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -2295,7 +2295,7 @@
                 <key>Roland707M.deck[3].padSection.padModeButtonPressed</key>
                 <description>DECK 4 PADS - CUE LOOP</description>
                 <status>0x97</status>
-                <midino>0x03</midino><!-- [SHIFT] + [HOT CUE] -->
+                <midino>0x01</midino><!-- [SHIFT] + [HOT CUE] -->
                 <options>
                     <script-binding/>
                 </options>

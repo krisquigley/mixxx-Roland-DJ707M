@@ -1089,12 +1089,15 @@ Roland707M.SlipModeButton.prototype.shift = function () {
 Roland707M.PadMode = {
   HOTCUE: 0x00,
   FLIP: 0x02,
-  CUELOOP: 0x01,
+  CUELOOP: 0x01, // Shift+Hot Cue
   AUTOLOOP: 0x03,
+  ROLL: 0x04, // Shift+Auto
   MANUALLOOP: 0x05,
   SAVEDLOOP: 0x06, // Shift+Manual Loop
   SLICER: 0x07,
+  SLICERLOOP: 0x08, // Shift+Slicer
   SAMPLER: 0x09,
+  PITCHPLAY: 0x0A, // Shift+Sampler
 };
 
 Roland707M.PadColor = {
@@ -1226,6 +1229,7 @@ Roland707M.PadSection = function (deck, offset) {
     // This need to be an object so that a recursive reconnectComponents
     // call won't influence all modes at once
     hotcue: new Roland707M.HotcueMode(deck, offset),
+    cueloop: new Roland707M.CueLoopMode(deck, offset),
     autoloop: new Roland707M.AutoLoopMode(deck, offset),
     manualloop: new Roland707M.ManualLoopMode(deck, offset),
     savedloop: new Roland707M.SavedLoopMode(deck, offset),
@@ -1235,6 +1239,11 @@ Roland707M.PadSection = function (deck, offset) {
 
   // Start in Hotcue Mode and disable other LEDs
   this.setPadMode(Roland707M.PadMode.HOTCUE);
+  midi.sendShortMsg(
+    0x94 + offset,
+    this.modes.cueloop.ledControl,
+    Roland707M.PadColor.OFF,
+  );
   midi.sendShortMsg(
     0x94 + offset,
     this.modes.autoloop.ledControl,
@@ -1266,6 +1275,9 @@ Roland707M.PadSection.prototype.controlToPadMode = function (control) {
   switch (control) {
     case Roland707M.PadMode.HOTCUE:
       mode = this.modes.hotcue;
+      break;
+    case Roland707M.PadMode.CUELOOP:
+      mode = this.modes.cueloop;
       break;
     case Roland707M.PadMode.AUTOLOOP:
       mode = this.modes.autoloop;
@@ -1455,53 +1467,84 @@ Roland707M.HotcueMode.prototype = Object.create(
 
 Roland707M.CueLoopMode = function (deck, offset) {
   components.ComponentContainer.call(this);
-  this.ledControl = Roland707M.PadMode.HOTCUE;
+  this.ledControl = Roland707M.PadMode.CUELOOP;
   this.color = Roland707M.PadColor.BLUE;
-
-  this.PerformancePad = function (n) {
-    this.midi = [0x94 + offset, 0x14 + n];
-    this.number = n + 1;
-    this.outKey = "hotcue_" + this.number + "_enabled";
-    this.colorKey = "hotcue_" + this.number + "_color";
-
-    components.Button.call(this);
-  };
-  this.PerformancePad.prototype = new components.Button({
-    sendShifted: true,
-    shiftControl: true,
-    shiftOffset: 8,
-    group: deck.currentDeck,
-    on: this.color,
-    off: this.color + Roland707M.PadColor.DIM_MODIFIER,
-    colorMapper: Roland707M.PadColorMap,
-    outConnect: false,
-    unshift: function () {
-      this.inKey = "hotcue_" + this.number + "_cueloop";
-    },
-    shift: function () {
-      this.inKey = "hotcue_" + this.number + "_gotoandloop";
-    },
-    output: components.HotcueButton.prototype.output,
-    outputColor: components.HotcueButton.prototype.outputColor,
-    connect: components.HotcueButton.prototype.connect,
-  });
+  var padColor = Roland707M.PadColor.BLUE;
 
   this.pads = new components.ComponentContainer();
-  for (let n = 0; n <= 7; n++) {
-    this.pads[n] = new this.PerformancePad(n);
+
+  // Pads 1-8 (0x14-0x1B unshifted, 0x1C-0x23 shifted) - Saved Loop Cues (Hotcues 17-24)
+  // Unshifted: Save active loop or recall saved loop | Shifted: Clear hotcues
+  for (var i = 0; i < 8; i++) {
+    this.pads[i] = new components.Button({
+      midi: [0x94 + offset, 0x14 + i],
+      sendShifted: true,
+      shiftControl: true,
+      shiftOffset: 8,
+      number: i + 17, // Hotcues 17-24
+      group: deck.currentDeck,
+      on: padColor,
+      off: Roland707M.PadColor.OFF,
+      outConnect: true,
+      outKey: "hotcue_" + (i + 17) + "_enabled",
+      unshift: function () {
+        // Unshifted: Save active loop or recall saved loop
+        this.input = function (channel, control, value, status, group) {
+          if (value > 0) {
+            var hotcueNum = this.number;
+            var isHotcueSet = engine.getValue(
+              group,
+              "hotcue_" + hotcueNum + "_enabled",
+            );
+
+            if (isHotcueSet) {
+              // Jump to hotcue and activate loop
+              engine.setValue(group, "hotcue_" + hotcueNum + "_gotoandloop", 1);
+            } else {
+              // Only save if there's an active loop
+              var loopEnabled = engine.getValue(group, "loop_enabled");
+              if (loopEnabled) {
+                // Save the currently active loop as hotcue
+                engine.setValue(group, "hotcue_" + hotcueNum + "_setloop", 1);
+              }
+              // If no loop is active, do nothing (don't create a regular cue)
+            }
+          }
+        };
+      },
+      shift: function () {
+        // Shifted: Clear hotcue
+        this.input = function (channel, control, value, status, group) {
+          if (value > 0) {
+            var hotcueNum = this.number;
+            engine.setValue(group, "hotcue_" + hotcueNum + "_clear", 1);
+          }
+        };
+      },
+    });
   }
 
   this.paramMinusButton = new components.Button({
     midi: [0x94 + offset, 0x28],
     group: deck.currentDeck,
-    outKey: "loop_halve",
-    inKey: "loop_halve",
+    key: "loop_halve",
+    type: components.Button.prototype.types.push,
+    input: function (channel, control, value, status, group) {
+      if (value > 0) {
+        components.Button.prototype.input.call(this, channel, control, 0x7F, status, group);
+      }
+    },
   });
   this.paramPlusButton = new components.Button({
     midi: [0x94 + offset, 0x29],
     group: deck.currentDeck,
-    outKey: "loop_double",
-    inKey: "loop_double",
+    key: "loop_double",
+    type: components.Button.prototype.types.push,
+    input: function (channel, control, value, status, group) {
+      if (value > 0) {
+        components.Button.prototype.input.call(this, channel, control, 0x7F, status, group);
+      }
+    },
   });
 };
 Roland707M.CueLoopMode.prototype = Object.create(
@@ -1702,7 +1745,7 @@ Roland707M.RollMode.prototype.setLoopSize = function (loopSize) {
 Roland707M.ManualLoopMode = function (deck, offset) {
   components.ComponentContainer.call(this);
   this.ledControl = Roland707M.PadMode.MANUALLOOP;
-  var padColor = Roland707M.PadColor.BLUE;
+  var padColor = Roland707M.PadColor.PURPLE;
 
   this.pads = [];
 
