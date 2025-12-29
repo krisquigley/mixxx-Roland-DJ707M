@@ -161,7 +161,7 @@
                 <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
                 <description>DECK 1 PADS - ROLL</description>
                 <status>0x94</status>
-                <midino>0x08</midino><!-- [ROLL] -->
+                <midino>0x04</midino><!-- [SHIFT] + [AUTO] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -889,7 +889,7 @@
                 <key>Roland707M.deck[2].padSection.padModeButtonPressed</key>
                 <description>DECK 3 PADS - ROLL</description>
                 <status>0x96</status>
-                <midino>0x08</midino><!-- [ROLL] -->
+                <midino>0x04</midino><!-- [SHIFT] + [AUTO] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -1617,7 +1617,7 @@
                 <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
                 <description>DECK 2 PADS - ROLL</description>
                 <status>0x95</status>
-                <midino>0x08</midino><!-- [ROLL] -->
+                <midino>0x04</midino><!-- [SHIFT] + [AUTO] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -2345,7 +2345,7 @@
                 <key>Roland707M.deck[3].padSection.padModeButtonPressed</key>
                 <description>DECK 4 PADS - ROLL</description>
                 <status>0x97</status>
-                <midino>0x08</midino><!-- [ROLL] -->
+                <midino>0x04</midino><!-- [SHIFT] + [AUTO] -->
                 <options>
                     <script-binding/>
                 </options>

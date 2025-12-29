@@ -1097,7 +1097,7 @@ Roland707M.PadMode = {
   SLICER: 0x07,
   SLICERLOOP: 0x08, // Shift+Slicer
   SAMPLER: 0x09,
-  PITCHPLAY: 0x0A, // Shift+Sampler
+  PITCHPLAY: 0x0a, // Shift+Sampler
 };
 
 Roland707M.PadColor = {
@@ -1170,15 +1170,15 @@ Roland707M.PadSection = function (deck, offset) {
    * ------------------------------ ------------ ---------------- ------------ -----------
    * [HOT CUE]                      0x00         White            White        Hot Cue
    * [HOT CUE] (press twice)        0x02         Blue             Orange       Saved Flip // Implemented as Hot Cues 9-16
-   * [SHIFT] + [HOT CUE]            0x01         Orange           Blue         Cue Loop // Saves as Hot Cues 17-24
+   * [SHIFT] + [HOT CUE]            0x01         Orange           Purpl        Cue Loop // Saves as Hot Cues 17-24
    * [AUTO]                         0x03         Turqoise         Light Blue   Auto Loop
-   * [SHIFT] + [AUTO]               0x04                                       Roll
-   * [MANUAL]                       0x05                                       Manual Loop
-   * [SHIFT] + [MANUAL]             0x06         Red              Green        Saved Loop
+   * [SHIFT] + [AUTO]               0x04                          Turquoise    Roll
+   * [MANUAL]                       0x05                          Yellow       Manual Loop
+   * [SHIFT] + [MANUAL]             0x06         Red              Yellow       Saved Loop
    * [SLICER]                       0x07         Blue             Red          Slicer
-   * [SHIFT] + [SLICER]             0x08         Blue             Blue         Slicer Loop
+   * [SHIFT] + [SLICER]             0x08         Blue             Purple       Slicer Loop
    * [SAMPLER]                      0x09         Purple           Magenta      Sampler
-   * [SHIFT] + [SAMPLER]            0x0A         Magenta          Purple       Pitch Play
+   * [SHIFT] + [SAMPLER]            0x0A         Magenta          Green        Pitch Play
    *
    * The Pad and Mode Buttons support 31 different LED states:
    *
@@ -1231,6 +1231,7 @@ Roland707M.PadSection = function (deck, offset) {
     hotcue: new Roland707M.HotcueMode(deck, offset),
     cueloop: new Roland707M.CueLoopMode(deck, offset),
     autoloop: new Roland707M.AutoLoopMode(deck, offset),
+    roll: new Roland707M.RollMode(deck, offset),
     manualloop: new Roland707M.ManualLoopMode(deck, offset),
     savedloop: new Roland707M.SavedLoopMode(deck, offset),
     sampler: new Roland707M.SamplerMode(deck, offset),
@@ -1247,6 +1248,11 @@ Roland707M.PadSection = function (deck, offset) {
   midi.sendShortMsg(
     0x94 + offset,
     this.modes.autoloop.ledControl,
+    Roland707M.PadColor.OFF,
+  );
+  midi.sendShortMsg(
+    0x94 + offset,
+    this.modes.roll.ledControl,
     Roland707M.PadColor.OFF,
   );
   midi.sendShortMsg(
@@ -1281,6 +1287,9 @@ Roland707M.PadSection.prototype.controlToPadMode = function (control) {
       break;
     case Roland707M.PadMode.AUTOLOOP:
       mode = this.modes.autoloop;
+      break;
+    case Roland707M.PadMode.ROLL:
+      mode = this.modes.roll;
       break;
     case Roland707M.PadMode.MANUALLOOP:
       mode = this.modes.manualloop;
@@ -1531,7 +1540,14 @@ Roland707M.CueLoopMode = function (deck, offset) {
     type: components.Button.prototype.types.push,
     input: function (channel, control, value, status, group) {
       if (value > 0) {
-        components.Button.prototype.input.call(this, channel, control, 0x7F, status, group);
+        components.Button.prototype.input.call(
+          this,
+          channel,
+          control,
+          0x7f,
+          status,
+          group,
+        );
       }
     },
   });
@@ -1542,7 +1558,14 @@ Roland707M.CueLoopMode = function (deck, offset) {
     type: components.Button.prototype.types.push,
     input: function (channel, control, value, status, group) {
       if (value > 0) {
-        components.Button.prototype.input.call(this, channel, control, 0x7F, status, group);
+        components.Button.prototype.input.call(
+          this,
+          channel,
+          control,
+          0x7f,
+          status,
+          group,
+        );
       }
     },
   });
@@ -1603,144 +1626,87 @@ Roland707M.EditMode.prototype = Object.create(
 Roland707M.RollMode = function (deck, offset) {
   components.ComponentContainer.call(this);
   this.ledControl = Roland707M.PadMode.ROLL;
-  this.color = Roland707M.PadColor.CELESTE;
-  this.pads = new components.ComponentContainer();
-  this.loopSize = 0.03125;
-  this.minSize = 0.03125; // 1/32
-  this.maxSize = 32;
+  this.color = Roland707M.PadColor.TURQUOISE;
+  var padColor = this.color;
 
-  for (let i = 0; i <= 3; i++) {
-    const loopSize = this.loopSize * Math.pow(2, i);
+  this.pads = new components.ComponentContainer();
+
+  // Beatlooproll sizes for pads 1-8
+  var rollSizes = [1 / 32, 1 / 16, 1 / 8, 1 / 4, 1 / 2, 1, 2, 4];
+
+  for (var i = 0; i < 8; i++) {
+    var ledChannel = 0x94 + offset;
+    var ledControl = 0x14 + i;
+    var dimColor = padColor + Roland707M.PadColor.DIM_MODIFIER;
+
     this.pads[i] = new components.Button({
-      midi: [0x94 + offset, 0x14 + i],
-      sendShifted: true,
-      shiftControl: true,
-      shiftOffset: 8,
+      midi: [ledChannel, ledControl],
       group: deck.currentDeck,
-      outKey: "beatloop_" + loopSize + "_enabled",
-      inKey: "beatlooproll_" + loopSize + "_activate",
+      on: padColor,
+      off: dimColor,
       outConnect: false,
-      on: this.color,
-      off:
-        loopSize === 0.25
-          ? Roland707M.PadColor.TURQUOISE
-          : loopSize === 4
-            ? Roland707M.PadColor.AQUAMARINE
-            : this.color + Roland707M.PadColor.DIM_MODIFIER,
+      input: function (channel, control, value, status, group) {
+        // Activate/deactivate the beatlooproll
+        var loopSize = rollSizes[(control - 0x14)];
+        engine.setValue(group, "beatlooproll_" + loopSize + "_activate", value > 0 ? 1 : 0);
+        // Send bright turquoise when pressed, dimmed when released
+        this.send(value > 0 ? this.on : this.off);
+      },
+      connect: function () {
+        // No connection needed - pads don't monitor any Mixxx control
+      },
+      trigger: function () {
+        // Initialize pad to dimmed turquoise when mode is activated
+        this.send(this.off);
+      },
     });
   }
-  this.pads[4] = new components.Button({
-    midi: [0x94 + offset, 0x18],
-    sendShifted: true,
-    shiftControl: true,
-    shiftOffset: 8,
-    group: deck.currentDeck,
-    key: "beatjump_backward",
-    outConnect: false,
-    off: Roland707M.PadColor.RED,
-    on: Roland707M.PadColor.RED + Roland707M.PadColor.DIM_MODIFIER,
-  });
-  this.pads[5] = new components.Button({
-    midi: [0x94 + offset, 0x19],
-    sendShifted: true,
-    shiftControl: true,
-    shiftOffset: 8,
-    group: deck.currentDeck,
-    outKey: "beatjump_size",
-    outConnect: false,
-    on: Roland707M.PadColor.ORANGE,
-    off: Roland707M.PadColor.ORANGE + Roland707M.PadColor.DIM_MODIFIER,
-    mode: this,
-    input: function (channel, control, value, _status, _group) {
-      if (value) {
-        const jumpSize = engine.getValue(this.group, "beatjump_size");
-        if (jumpSize > this.mode.minSize) {
-          engine.setValue(this.group, "beatjump_size", jumpSize / 2);
-        }
-      }
-    },
-    output: function (value, _group, _control) {
-      this.send(value > this.mode.minSize ? this.on : this.off);
-    },
-  });
-  this.pads[6] = new components.Button({
-    midi: [0x94 + offset, 0x1a],
-    sendShifted: true,
-    shiftControl: true,
-    shiftOffset: 8,
-    group: deck.currentDeck,
-    outKey: "beatjump_size",
-    outConnect: false,
-    on: Roland707M.PadColor.ORANGE,
-    off: Roland707M.PadColor.ORANGE + Roland707M.PadColor.DIM_MODIFIER,
-    mode: this,
-    input: function (channel, control, value, _status, _group) {
-      if (value) {
-        const jumpSize = engine.getValue(this.group, "beatjump_size");
-        if (jumpSize < this.mode.maxSize) {
-          engine.setValue(this.group, "beatjump_size", jumpSize * 2);
-        }
-      }
-    },
-    output: function (value, _group, _control) {
-      this.send(value < this.mode.maxSize ? this.on : this.off);
-    },
-  });
-  this.pads[7] = new components.Button({
-    midi: [0x94 + offset, 0x1b],
-    sendShifted: true,
-    shiftControl: true,
-    shiftOffset: 8,
-    group: deck.currentDeck,
-    key: "beatjump_forward",
-    outConnect: false,
-    off: Roland707M.PadColor.RED,
-    on: Roland707M.PadColor.RED + Roland707M.PadColor.DIM_MODIFIER,
-  });
 
+  // Parameter buttons to halve/double active loop during roll
   this.paramMinusButton = new components.Button({
     midi: [0x94 + offset, 0x28],
-    mode: this,
-    input: function (channel, control, value, _status, _group) {
-      if (value) {
-        if (this.mode.loopSize > this.mode.minSize) {
-          this.mode.setLoopSize(this.mode.loopSize / 2);
-        }
+    group: deck.currentDeck,
+    key: "loop_halve",
+    type: components.Button.prototype.types.push,
+    input: function (channel, control, value, status, group) {
+      if (value > 0) {
+        components.Button.prototype.input.call(
+          this,
+          channel,
+          control,
+          0x7f,
+          status,
+          group,
+        );
       }
-      this.send(value);
     },
   });
+
   this.paramPlusButton = new components.Button({
     midi: [0x94 + offset, 0x29],
-    mode: this,
-    input: function (channel, control, value, _status, _group) {
-      if (value) {
-        if (this.mode.loopSize * 8 < this.mode.maxSize) {
-          this.mode.setLoopSize(this.mode.loopSize * 2);
-        }
+    group: deck.currentDeck,
+    key: "loop_double",
+    type: components.Button.prototype.types.push,
+    input: function (channel, control, value, status, group) {
+      if (value > 0) {
+        components.Button.prototype.input.call(
+          this,
+          channel,
+          control,
+          0x7f,
+          status,
+          group,
+        );
       }
-      this.send(value);
     },
   });
 };
+
 Roland707M.RollMode.prototype = Object.create(
   components.ComponentContainer.prototype,
 );
-Roland707M.RollMode.prototype.setLoopSize = function (loopSize) {
-  this.loopSize = loopSize;
-  for (let i = 0; i <= 3; i++) {
-    const padLoopSize = this.loopSize * Math.pow(2, i);
-    this.pads[i].inKey = "beatlooproll_" + padLoopSize + "_activate";
-    this.pads[i].outKey = "beatloop_" + padLoopSize + "_enabled";
-    this.pads[i].off =
-      padLoopSize === 0.25
-        ? Roland707M.PadColor.TURQUOISE
-        : padLoopSize === 4
-          ? Roland707M.PadColor.AQUAMARINE
-          : this.color + Roland707M.PadColor.DIM_MODIFIER;
-  }
-  this.reconnectComponents();
-};
+
+// RollMode doesn't need shift/unshift - uses default ComponentContainer behavior
 
 Roland707M.ManualLoopMode = function (deck, offset) {
   components.ComponentContainer.call(this);
@@ -1935,9 +1901,9 @@ Roland707M.AutoLoopMode = function (deck, offset) {
   var padColor = this.color;
 
   this.pads = new components.ComponentContainer();
-  
+
   // Default beatloop sizes for pads 1-8
-  this.loopSizes = [1/32, 1/16, 1/8, 1/4, 1/2, 1, 2, 4];
+  this.loopSizes = [1 / 32, 1 / 16, 1 / 8, 1 / 4, 1 / 2, 1, 2, 4];
   this.sizeIndex = 0; // Current base index for shifting
 
   // Create pads for beatloop activation
@@ -1954,14 +1920,19 @@ Roland707M.AutoLoopMode = function (deck, offset) {
         if (value > 0) {
           var loopSize = this.mode.loopSizes[this.number];
           engine.setValue(group, "beatloop_" + loopSize + "_toggle", 1);
+          // Manually trigger output after toggling
+          this.trigger();
         }
       },
       output: function (value, group, control) {
         var loopSize = this.mode.loopSizes[this.number];
-        var isActive = engine.getValue(group, "beatloop_" + loopSize + "_enabled");
+        var isActive = engine.getValue(
+          group,
+          "beatloop_" + loopSize + "_enabled",
+        );
         this.send(isActive ? this.on : this.off);
       },
-      outConnect: true,
+      outConnect: false,
       outKey: "beatloop_" + this.loopSizes[i] + "_enabled",
     });
   }
@@ -1974,7 +1945,14 @@ Roland707M.AutoLoopMode = function (deck, offset) {
     type: components.Button.prototype.types.push,
     input: function (channel, control, value, status, group) {
       if (value > 0) {
-        components.Button.prototype.input.call(this, channel, control, 0x7F, status, group);
+        components.Button.prototype.input.call(
+          this,
+          channel,
+          control,
+          0x7f,
+          status,
+          group,
+        );
       }
     },
   });
@@ -1986,7 +1964,14 @@ Roland707M.AutoLoopMode = function (deck, offset) {
     type: components.Button.prototype.types.push,
     input: function (channel, control, value, status, group) {
       if (value > 0) {
-        components.Button.prototype.input.call(this, channel, control, 0x7F, status, group);
+        components.Button.prototype.input.call(
+          this,
+          channel,
+          control,
+          0x7f,
+          status,
+          group,
+        );
       }
     },
   });
@@ -2066,29 +2051,6 @@ Roland707M.SamplerMode = function (deck, offset) {
   }
 };
 Roland707M.SamplerMode.prototype = Object.create(
-  components.ComponentContainer.prototype,
-);
-
-Roland707M.VelocitySamplerMode = function (deck, offset) {
-  components.ComponentContainer.call(this);
-  this.ledControl = Roland707M.PadMode.SAMPLER;
-  this.color = Roland707M.PadColor.PURPLE;
-  this.pads = new components.ComponentContainer();
-  for (let i = 0; i <= 7; i++) {
-    this.pads[i] = new components.SamplerButton({
-      midi: [0x94 + offset, 0x14 + i],
-      sendShifted: true,
-      shiftControl: true,
-      shiftOffset: 8,
-      number: i + 1,
-      outConnect: false,
-      on: this.color,
-      off: this.color + Roland707M.PadColor.DIM_MODIFIER,
-      volumeByVelocity: true,
-    });
-  }
-};
-Roland707M.VelocitySamplerMode.prototype = Object.create(
   components.ComponentContainer.prototype,
 );
 
