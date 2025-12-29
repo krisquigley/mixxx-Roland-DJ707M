@@ -1171,7 +1171,7 @@ Roland707M.PadSection = function (deck, offset) {
    * [HOT CUE]                      0x00         White            White        Hot Cue
    * [HOT CUE] (press twice)        0x02         Blue             Orange       Saved Flip // Implemented as Hot Cues 9-16
    * [SHIFT] + [HOT CUE]            0x01         Orange           Purpl        Cue Loop // Saves as Hot Cues 17-24
-   * [AUTO]                         0x03         Turqoise         Light Blue   Auto Loop
+   * [AUTO]                         0x03         Turqoise         Celeste      Auto Loop
    * [SHIFT] + [AUTO]               0x04                          Turquoise    Roll
    * [MANUAL]                       0x05                          Yellow       Manual Loop
    * [SHIFT] + [MANUAL]             0x06         Red              Yellow       Saved Loop
@@ -1647,8 +1647,12 @@ Roland707M.RollMode = function (deck, offset) {
       outConnect: false,
       input: function (channel, control, value, status, group) {
         // Activate/deactivate the beatlooproll
-        var loopSize = rollSizes[(control - 0x14)];
-        engine.setValue(group, "beatlooproll_" + loopSize + "_activate", value > 0 ? 1 : 0);
+        var loopSize = rollSizes[control - 0x14];
+        engine.setValue(
+          group,
+          "beatlooproll_" + loopSize + "_activate",
+          value > 0 ? 1 : 0,
+        );
         // Send bright turquoise when pressed, dimmed when released
         this.send(value > 0 ? this.on : this.off);
       },
@@ -1897,7 +1901,7 @@ Roland707M.ManualLoopMode.prototype = Object.create(
 Roland707M.AutoLoopMode = function (deck, offset) {
   components.ComponentContainer.call(this);
   this.ledControl = Roland707M.PadMode.AUTOLOOP;
-  this.color = Roland707M.PadColor.GREEN;
+  this.color = Roland707M.PadColor.CELESTE;
   var padColor = this.color;
 
   this.pads = new components.ComponentContainer();
