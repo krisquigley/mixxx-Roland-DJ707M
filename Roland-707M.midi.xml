@@ -149,6 +149,16 @@
             <control>
                 <group>[Channel1]</group>
                 <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
+                <description>DECK 1 PADS - AUTO LOOP</description>
+                <status>0x94</status>
+                <midino>0x03</midino><!-- [AUTO] -->
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
                 <description>DECK 1 PADS - ROLL</description>
                 <status>0x94</status>
                 <midino>0x08</midino><!-- [ROLL] -->
@@ -860,6 +870,16 @@
                 <description>DECK 3 PADS - CUE LOOP</description>
                 <status>0x96</status>
                 <midino>0x01</midino><!-- [SHIFT] + [HOT CUE] -->
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>Roland707M.deck[2].padSection.padModeButtonPressed</key>
+                <description>DECK 3 PADS - AUTO LOOP</description>
+                <status>0x96</status>
+                <midino>0x03</midino><!-- [AUTO] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -1585,6 +1605,16 @@
             <control>
                 <group>[Channel2]</group>
                 <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
+                <description>DECK 2 PADS - AUTO LOOP</description>
+                <status>0x95</status>
+                <midino>0x03</midino><!-- [AUTO] -->
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
                 <description>DECK 2 PADS - ROLL</description>
                 <status>0x95</status>
                 <midino>0x08</midino><!-- [ROLL] -->
@@ -2296,6 +2326,16 @@
                 <description>DECK 4 PADS - CUE LOOP</description>
                 <status>0x97</status>
                 <midino>0x01</midino><!-- [SHIFT] + [HOT CUE] -->
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>Roland707M.deck[3].padSection.padModeButtonPressed</key>
+                <description>DECK 4 PADS - AUTO LOOP</description>
+                <status>0x97</status>
+                <midino>0x03</midino><!-- [AUTO] -->
                 <options>
                     <script-binding/>
                 </options>

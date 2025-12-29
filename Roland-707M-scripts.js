@@ -1932,8 +1932,66 @@ Roland707M.AutoLoopMode = function (deck, offset) {
   components.ComponentContainer.call(this);
   this.ledControl = Roland707M.PadMode.AUTOLOOP;
   this.color = Roland707M.PadColor.GREEN;
-  // TODO: Implement auto loop mode with different beatloop sizes on pads
+  var padColor = this.color;
+
+  this.pads = new components.ComponentContainer();
+  
+  // Default beatloop sizes for pads 1-8
+  this.loopSizes = [1/32, 1/16, 1/8, 1/4, 1/2, 1, 2, 4];
+  this.sizeIndex = 0; // Current base index for shifting
+
+  // Create pads for beatloop activation
+  for (var i = 0; i < 8; i++) {
+    this.pads[i] = new components.Button({
+      midi: [0x94 + offset, 0x14 + i],
+      number: i,
+      mode: this,
+      group: deck.currentDeck,
+      type: components.Button.prototype.types.toggle,
+      on: padColor,
+      off: padColor + Roland707M.PadColor.DIM_MODIFIER,
+      input: function (channel, control, value, status, group) {
+        if (value > 0) {
+          var loopSize = this.mode.loopSizes[this.number];
+          engine.setValue(group, "beatloop_" + loopSize + "_toggle", 1);
+        }
+      },
+      output: function (value, group, control) {
+        var loopSize = this.mode.loopSizes[this.number];
+        var isActive = engine.getValue(group, "beatloop_" + loopSize + "_enabled");
+        this.send(isActive ? this.on : this.off);
+      },
+      outConnect: true,
+      outKey: "beatloop_" + this.loopSizes[i] + "_enabled",
+    });
+  }
+
+  // Parameter buttons to shift all loop sizes up/down
+  this.paramMinusButton = new components.Button({
+    midi: [0x94 + offset, 0x28],
+    group: deck.currentDeck,
+    key: "loop_halve",
+    type: components.Button.prototype.types.push,
+    input: function (channel, control, value, status, group) {
+      if (value > 0) {
+        components.Button.prototype.input.call(this, channel, control, 0x7F, status, group);
+      }
+    },
+  });
+
+  this.paramPlusButton = new components.Button({
+    midi: [0x94 + offset, 0x29],
+    group: deck.currentDeck,
+    key: "loop_double",
+    type: components.Button.prototype.types.push,
+    input: function (channel, control, value, status, group) {
+      if (value > 0) {
+        components.Button.prototype.input.call(this, channel, control, 0x7F, status, group);
+      }
+    },
+  });
 };
+
 Roland707M.AutoLoopMode.prototype = Object.create(
   components.ComponentContainer.prototype,
 );
