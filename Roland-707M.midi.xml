@@ -129,16 +129,6 @@
             <control>
                 <group>[Channel1]</group>
                 <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
-                <description>DECK 1 PADS - FLIP</description>
-                <status>0x94</status>
-                <midino>0x02</midino><!-- [HOT CUE] (press twice) -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel1]</group>
-                <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
                 <description>DECK 1 PADS - CUE LOOP</description>
                 <status>0x94</status>
                 <midino>0x01</midino><!-- [SHIFT] + [HOT CUE] -->
@@ -169,9 +159,9 @@
             <control>
                 <group>[Channel1]</group>
                 <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
-                <description>DECK 1 PADS - LOOP</description>
+                <description>DECK 1 PADS - MANUAL LOOP</description>
                 <status>0x94</status>
-                <midino>0x0D</midino><!-- [ROLL] (press twice) -->
+                <midino>0x05</midino><!-- [MANUAL LOOP] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -179,49 +169,9 @@
             <control>
                 <group>[Channel1]</group>
                 <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
-                <description>DECK 1 PADS - SLICER</description>
+                <description>DECK 1 PADS - SAVED LOOP</description>
                 <status>0x94</status>
-                <midino>0x09</midino><!-- [SHIFT] + [ROLL] -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel1]</group>
-                <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
-                <description>DECK 1 PADS - SLICER LOOP</description>
-                <status>0x94</status>
-                <midino>0x0A</midino><!-- [SHIFT] + [ROLL] (press twice) -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel1]</group>
-                <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
-                <description>DECK 1 PADS - TR</description>
-                <status>0x94</status>
-                <midino>0x04</midino><!-- [TR] -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel1]</group>
-                <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
-                <description>DECK 1 PADS - TR VELOCITY</description>
-                <status>0x94</status>
-                <midino>0x06</midino><!-- [TR] (press twice) -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel1]</group>
-                <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
-                <description>DECK 1 PADS - PATTERN</description>
-                <status>0x94</status>
-                <midino>0x05</midino><!-- [SHIFT] + [TR] -->
+                <midino>0x06</midino><!-- [SHIFT] + [MANUAL LOOP] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -231,7 +181,7 @@
                 <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
                 <description>DECK 1 PADS - SAMPLER</description>
                 <status>0x94</status>
-                <midino>0x0B</midino><!-- [SAMPLER] -->
+                <midino>0x09</midino><!-- [SAMPLER] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -241,17 +191,7 @@
                 <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
                 <description>DECK 1 PADS - PITCH PLAY</description>
                 <status>0x94</status>
-                <midino>0x0F</midino><!-- [SAMPLER] (press twice) -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel1]</group>
-                <key>Roland707M.deck[0].padSection.padModeButtonPressed</key>
-                <description>DECK 1 PADS - VELOCITY</description>
-                <status>0x94</status>
-                <midino>0x0C</midino><!-- [SHIFT] + [SAMPLER] -->
+                <midino>0x0F</midino><!-- [SHIFT] + [SAMPLER] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -857,16 +797,6 @@
             <control>
                 <group>[Channel3]</group>
                 <key>Roland707M.deck[2].padSection.padModeButtonPressed</key>
-                <description>DECK 3 PADS - FLIP</description>
-                <status>0x96</status>
-                <midino>0x02</midino><!-- [HOT CUE] (press twice) -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel3]</group>
-                <key>Roland707M.deck[2].padSection.padModeButtonPressed</key>
                 <description>DECK 3 PADS - CUE LOOP</description>
                 <status>0x96</status>
                 <midino>0x01</midino><!-- [SHIFT] + [HOT CUE] -->
@@ -897,9 +827,9 @@
             <control>
                 <group>[Channel3]</group>
                 <key>Roland707M.deck[2].padSection.padModeButtonPressed</key>
-                <description>DECK 3 PADS - LOOP</description>
+                <description>DECK 3 PADS - MANUAL LOOP</description>
                 <status>0x96</status>
-                <midino>0x0D</midino><!-- [ROLL] (press twice) -->
+                <midino>0x05</midino><!-- [MANUAL LOOP] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -907,49 +837,9 @@
             <control>
                 <group>[Channel3]</group>
                 <key>Roland707M.deck[2].padSection.padModeButtonPressed</key>
-                <description>DECK 3 PADS - SLICER</description>
+                <description>DECK 3 PADS - SAVED LOOP</description>
                 <status>0x96</status>
-                <midino>0x09</midino><!-- [SHIFT] + [ROLL] -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel3]</group>
-                <key>Roland707M.deck[2].padSection.padModeButtonPressed</key>
-                <description>DECK 3 PADS - SLICER LOOP</description>
-                <status>0x96</status>
-                <midino>0x0A</midino><!-- [SHIFT] + [ROLL] (press twice) -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel3]</group>
-                <key>Roland707M.deck[2].padSection.padModeButtonPressed</key>
-                <description>DECK 3 PADS - TR</description>
-                <status>0x96</status>
-                <midino>0x04</midino><!-- [TR] -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel3]</group>
-                <key>Roland707M.deck[2].padSection.padModeButtonPressed</key>
-                <description>DECK 3 PADS - TR VELOCITY</description>
-                <status>0x96</status>
-                <midino>0x06</midino><!-- [TR] (press twice) -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel3]</group>
-                <key>Roland707M.deck[2].padSection.padModeButtonPressed</key>
-                <description>DECK 3 PADS - PATTERN</description>
-                <status>0x96</status>
-                <midino>0x05</midino><!-- [SHIFT] + [TR] -->
+                <midino>0x06</midino><!-- [SHIFT] + [MANUAL LOOP] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -959,7 +849,7 @@
                 <key>Roland707M.deck[2].padSection.padModeButtonPressed</key>
                 <description>DECK 3 PADS - SAMPLER</description>
                 <status>0x96</status>
-                <midino>0x0B</midino><!-- [SAMPLER] -->
+                <midino>0x09</midino><!-- [SAMPLER] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -969,17 +859,7 @@
                 <key>Roland707M.deck[2].padSection.padModeButtonPressed</key>
                 <description>DECK 3 PADS - PITCH PLAY</description>
                 <status>0x96</status>
-                <midino>0x0F</midino><!-- [SAMPLER] (press twice) -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel3]</group>
-                <key>Roland707M.deck[2].padSection.padModeButtonPressed</key>
-                <description>DECK 3 PADS - VELOCITY</description>
-                <status>0x96</status>
-                <midino>0x0C</midino><!-- [SHIFT] + [SAMPLER] -->
+                <midino>0x0F</midino><!-- [SHIFT] + [SAMPLER] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -1585,16 +1465,6 @@
             <control>
                 <group>[Channel2]</group>
                 <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
-                <description>DECK 2 PADS - FLIP</description>
-                <status>0x95</status>
-                <midino>0x02</midino><!-- [HOT CUE] (press twice) -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel2]</group>
-                <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
                 <description>DECK 2 PADS - CUE LOOP</description>
                 <status>0x95</status>
                 <midino>0x01</midino><!-- [SHIFT] + [HOT CUE] -->
@@ -1625,9 +1495,9 @@
             <control>
                 <group>[Channel2]</group>
                 <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
-                <description>DECK 2 PADS - LOOP</description>
+                <description>DECK 2 PADS - MANUAL LOOP</description>
                 <status>0x95</status>
-                <midino>0x0D</midino><!-- [ROLL] (press twice) -->
+                <midino>0x05</midino><!-- [MANUAL LOOP] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -1635,49 +1505,9 @@
             <control>
                 <group>[Channel2]</group>
                 <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
-                <description>DECK 2 PADS - SLICER</description>
+                <description>DECK 2 PADS - SAVED LOOP</description>
                 <status>0x95</status>
-                <midino>0x09</midino><!-- [SHIFT] + [ROLL] -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel2]</group>
-                <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
-                <description>DECK 2 PADS - SLICER LOOP</description>
-                <status>0x95</status>
-                <midino>0x0A</midino><!-- [SHIFT] + [ROLL] (press twice) -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel2]</group>
-                <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
-                <description>DECK 2 PADS - TR</description>
-                <status>0x95</status>
-                <midino>0x04</midino><!-- [TR] -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel2]</group>
-                <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
-                <description>DECK 2 PADS - TR VELOCITY</description>
-                <status>0x95</status>
-                <midino>0x06</midino><!-- [TR] (press twice) -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel2]</group>
-                <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
-                <description>DECK 2 PADS - PATTERN</description>
-                <status>0x95</status>
-                <midino>0x05</midino><!-- [SHIFT] + [TR] -->
+                <midino>0x06</midino><!-- [SHIFT] + [MANUAL LOOP] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -1687,7 +1517,7 @@
                 <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
                 <description>DECK 2 PADS - SAMPLER</description>
                 <status>0x95</status>
-                <midino>0x0B</midino><!-- [SAMPLER] -->
+                <midino>0x09</midino><!-- [SAMPLER] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -1697,17 +1527,7 @@
                 <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
                 <description>DECK 2 PADS - PITCH PLAY</description>
                 <status>0x95</status>
-                <midino>0x0F</midino><!-- [SAMPLER] (press twice) -->
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel2]</group>
-                <key>Roland707M.deck[1].padSection.padModeButtonPressed</key>
-                <description>DECK 2 PADS - VELOCITY</description>
-                <status>0x95</status>
-                <midino>0x0C</midino><!-- [SHIFT] + [SAMPLER] -->
+                <midino>0x0F</midino><!-- [SHIFT] + [SAMPLER] -->
                 <options>
                     <script-binding/>
                 </options>
@@ -2425,7 +2245,7 @@
                 <key>Roland707M.deck[3].padSection.padModeButtonPressed</key>
                 <description>DECK 4 PADS - PITCH PLAY</description>
                 <status>0x97</status>
-                <midino>0x0F</midino><!-- [SAMPLER] (press twice) -->
+                <midino>0x0F</midino><!-- [SHIFT] + [SAMPLER] -->
                 <options>
                     <script-binding/>
                 </options>

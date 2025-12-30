@@ -1097,7 +1097,7 @@ Roland707M.PadMode = {
   SLICER: 0x07,
   SLICERLOOP: 0x08, // Shift+Slicer
   SAMPLER: 0x09,
-  PITCHPLAY: 0x0a, // Shift+Sampler
+  PITCHPLAY: 0x0f, // Shift+Sampler
 };
 
 Roland707M.PadColor = {
@@ -1235,6 +1235,7 @@ Roland707M.PadSection = function (deck, offset) {
     manualloop: new Roland707M.ManualLoopMode(deck, offset),
     savedloop: new Roland707M.SavedLoopMode(deck, offset),
     sampler: new Roland707M.SamplerMode(deck, offset),
+    pitchplay: new Roland707M.PitchPlayMode(deck, offset),
   };
   this.offset = offset;
 
@@ -1270,6 +1271,11 @@ Roland707M.PadSection = function (deck, offset) {
     this.modes.sampler.ledControl,
     Roland707M.PadColor.OFF,
   );
+  midi.sendShortMsg(
+    0x94 + offset,
+    this.modes.pitchplay.ledControl,
+    Roland707M.PadColor.OFF,
+  );
 };
 
 Roland707M.PadSection.prototype = Object.create(
@@ -1303,6 +1309,9 @@ Roland707M.PadSection.prototype.controlToPadMode = function (control) {
       break;
     case Roland707M.PadMode.SAMPLER:
       mode = this.modes.sampler;
+      break;
+    case Roland707M.PadMode.PITCHPLAY:
+      mode = this.modes.pitchplay;
       break;
   }
 
@@ -1715,7 +1724,8 @@ Roland707M.RollMode.prototype = Object.create(
 Roland707M.ManualLoopMode = function (deck, offset) {
   components.ComponentContainer.call(this);
   this.ledControl = Roland707M.PadMode.MANUALLOOP;
-  var padColor = Roland707M.PadColor.YELLOW;
+  this.color = Roland707M.PadColor.YELLOW;
+  var padColor = this.color;
 
   this.pads = [];
 
@@ -1988,7 +1998,8 @@ Roland707M.AutoLoopMode.prototype = Object.create(
 Roland707M.SavedLoopMode = function (deck, offset) {
   components.ComponentContainer.call(this);
   this.ledControl = Roland707M.PadMode.SAVEDLOOP;
-  var padColor = Roland707M.PadColor.YELLOW;
+  this.color = Roland707M.PadColor.YELLOW;
+  var padColor = this.color;
 
   this.pads = [];
 
@@ -2067,7 +2078,7 @@ Roland707M.PitchPlayMode = function (deck, offset) {
     DOWN: 2,
   };
 
-  this.ledControl = Roland707M.PadMode.SAMPLER;
+  this.ledControl = Roland707M.PadMode.PITCHPLAY;
   this.color = Roland707M.PadColor.GREEN;
   this.cuepoint = 1;
   this.range = PitchPlayRange.MID;
