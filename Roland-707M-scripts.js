@@ -719,11 +719,9 @@ Roland707M.Deck = function (deckNumbers, offset) {
     });
   }
 
-  var filterGroup = "[QuickEffectRack1_[Channel" + deckNumbers + "]]";
-  console.log("Deck " + deckNumbers + " filter group: " + filterGroup + ", MIDI: 0x" + (0xb0 + offset).toString(16) + " 0x1a");
   this.filter = new components.Pot({
     midi: [0xb0 + offset, 0x1a],
-    group: filterGroup,
+    group: "[QuickEffectRack1_[Channel" + deckNumbers + "]]",
     inKey: "super1",
   });
 
@@ -1225,6 +1223,7 @@ Roland707M.PadSection = function (deck, offset) {
     // This need to be an object so that a recursive reconnectComponents
     // call won't influence all modes at once
     hotcue: new Roland707M.HotcueMode(deck, offset),
+    flip: new Roland707M.FlipMode(deck, offset),
     cueloop: new Roland707M.CueLoopMode(deck, offset),
     autoloop: new Roland707M.AutoLoopMode(deck, offset),
     roll: new Roland707M.RollMode(deck, offset),
@@ -1237,6 +1236,11 @@ Roland707M.PadSection = function (deck, offset) {
 
   // Start in Hotcue Mode and disable other LEDs
   this.setPadMode(Roland707M.PadMode.HOTCUE);
+  midi.sendShortMsg(
+    0x94 + offset,
+    this.modes.flip.ledControl,
+    Roland707M.PadColor.OFF,
+  );
   midi.sendShortMsg(
     0x94 + offset,
     this.modes.cueloop.ledControl,
@@ -1283,6 +1287,9 @@ Roland707M.PadSection.prototype.controlToPadMode = function (control) {
   switch (control) {
     case Roland707M.PadMode.HOTCUE:
       mode = this.modes.hotcue;
+      break;
+    case Roland707M.PadMode.FLIP:
+      mode = this.modes.flip;
       break;
     case Roland707M.PadMode.CUELOOP:
       mode = this.modes.cueloop;
@@ -1476,6 +1483,58 @@ Roland707M.HotcueMode = function (deck, offset) {
   });
 };
 Roland707M.HotcueMode.prototype = Object.create(
+  components.ComponentContainer.prototype,
+);
+
+Roland707M.FlipMode = function (deck, offset) {
+  components.ComponentContainer.call(this);
+  this.ledControl = Roland707M.PadMode.FLIP;
+  this.color = Roland707M.PadColor.ORANGE;
+
+  this.pads = new components.ComponentContainer();
+  for (let i = 0; i <= 7; i++) {
+    this.pads[i] = new components.HotcueButton({
+      midi: [0x94 + offset, 0x14 + i],
+      sendShifted: true,
+      shiftControl: true,
+      shiftOffset: 8,
+      number: i + 9, // Hotcues 9-16
+      group: deck.currentDeck,
+      on: this.color,
+      off: this.color + Roland707M.PadColor.DIM_MODIFIER,
+      colorMapper: Roland707M.PadColorMap,
+      outConnect: false,
+      unshift: function () {
+        this.inKey = "hotcue_" + this.number + "_activatecue";
+      },
+    });
+  }
+  this.paramMinusButton = new components.Button({
+    midi: [0x94 + offset, 0x28],
+    group: deck.currentDeck,
+    outKey: "hotcue_focus_color_prev",
+    inKey: "hotcue_focus_color_prev",
+  });
+  this.paramPlusButton = new components.Button({
+    midi: [0x94 + offset, 0x29],
+    group: deck.currentDeck,
+    outKey: "hotcue_focus_color_next",
+    inKey: "hotcue_focus_color_next",
+  });
+  this.param2MinusButton = new components.Button({
+    midi: [0x94 + offset, 0x2a],
+    group: deck.currentDeck,
+    outKey: "beats_translate_earlier",
+    inKey: "beats_translate_earlier",
+  });
+  this.param2PlusButton = new components.Button({
+    midi: [0x94 + offset, 0x2b],
+    group: deck.currentDeck,
+    outKey: "beats_translate_later",
+    inKey: "beats_translate_later",
+  });
+};
+Roland707M.FlipMode.prototype = Object.create(
   components.ComponentContainer.prototype,
 );
 
