@@ -88,7 +88,6 @@ Roland707M.init = function () {
 
   Roland707M.leftLoadTrackButton = new components.Button({
     group: "[Channel1]",
-    midi: [0x9f, 0x02],
     unshift: function () {
       this.inKey = "LoadSelectedTrack";
     },
@@ -96,10 +95,8 @@ Roland707M.init = function () {
       this.inKey = "eject";
     },
     input: function (channel, control, value, status, _group) {
-      this.send(
-        this.isPress(channel, control, value, status) ? this.on : this.off,
-      );
-      components.Button.prototype.input.apply(this, arguments);
+      // Use the current group (which is updated by deck toggle button)
+      components.Button.prototype.input.call(this, channel, control, value, status, this.group);
     },
   });
   Roland707M.deck3Button = new Roland707M.DeckToggleButton({
@@ -110,7 +107,6 @@ Roland707M.init = function () {
 
   Roland707M.rightLoadTrackButton = new components.Button({
     group: "[Channel2]",
-    midi: [0x9f, 0x02],
     unshift: function () {
       this.inKey = "LoadSelectedTrack";
     },
@@ -118,10 +114,8 @@ Roland707M.init = function () {
       this.inKey = "eject";
     },
     input: function (channel, control, value, status, _group) {
-      this.send(
-        this.isPress(channel, control, value, status) ? this.on : this.off,
-      );
-      components.Button.prototype.input.apply(this, arguments);
+      // Use the current group (which is updated by deck toggle button)
+      components.Button.prototype.input.call(this, channel, control, value, status, this.group);
     },
   });
   Roland707M.deck4Button = new Roland707M.DeckToggleButton({

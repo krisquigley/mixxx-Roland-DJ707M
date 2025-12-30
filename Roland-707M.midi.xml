@@ -2767,6 +2767,26 @@
                     <script-binding/>
                 </options>
             </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>Roland707M.deck3Button.input</key>
+                <description>DECK 3 DISABLE (RETURN TO DECK 1)</description>
+                <status>0x92</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>Roland707M.deck4Button.input</key>
+                <description>DECK 4 DISABLE (RETURN TO DECK 2)</description>
+                <status>0x93</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
             <!-- FX 1 -->
             <control>
                 <group>[Master]</group>
