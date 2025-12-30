@@ -719,9 +719,11 @@ Roland707M.Deck = function (deckNumbers, offset) {
     });
   }
 
+  var filterGroup = "[QuickEffectRack1_[Channel" + deckNumbers + "]]";
+  console.log("Deck " + deckNumbers + " filter group: " + filterGroup + ", MIDI: 0x" + (0xb0 + offset).toString(16) + " 0x1a");
   this.filter = new components.Pot({
     midi: [0xb0 + offset, 0x1a],
-    group: "[QuickEffectRack1_" + this.currentDeck + "]",
+    group: filterGroup,
     inKey: "super1",
   });
 
