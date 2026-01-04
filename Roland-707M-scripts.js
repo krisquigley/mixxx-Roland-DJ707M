@@ -53,9 +53,13 @@ var Roland707M = {};
 // Tweakables. //
 /////////////////
 
-Roland707M.stripSearchScaling = 0.15;
+// Jog wheel sensitivity settings (adjust these to your preference)
+Roland707M.scratchScale = 1.0; // Scratch sensitivity (1.0 = normal, higher = more sensitive)
+Roland707M.jogScale = 0.375; // Pitch bend sensitivity (higher = more pitch change per rotation)
+Roland707M.searchScale = 2.0; // Fast search sensitivity when SHIFT is held (2x speed)
+
 Roland707M.tempoRange = [0.08, 0.16, 0.5];
-Roland707M.autoShowFourDecks = false;
+Roland707M.autoShowFourDecks = true;
 Roland707M.trsGroup = "Auxiliary1"; // TR-S input
 
 ///////////
@@ -96,7 +100,14 @@ Roland707M.init = function () {
     },
     input: function (channel, control, value, status, _group) {
       // Use the current group (which is updated by deck toggle button)
-      components.Button.prototype.input.call(this, channel, control, value, status, this.group);
+      components.Button.prototype.input.call(
+        this,
+        channel,
+        control,
+        value,
+        status,
+        this.group,
+      );
     },
   });
   Roland707M.deck3Button = new Roland707M.DeckToggleButton({
@@ -115,7 +126,14 @@ Roland707M.init = function () {
     },
     input: function (channel, control, value, status, _group) {
       // Use the current group (which is updated by deck toggle button)
-      components.Button.prototype.input.call(this, channel, control, value, status, this.group);
+      components.Button.prototype.input.call(
+        this,
+        channel,
+        control,
+        value,
+        status,
+        this.group,
+      );
     },
   });
   Roland707M.deck4Button = new Roland707M.DeckToggleButton({
@@ -438,6 +456,10 @@ Roland707M.setChannelInput = function (
 Roland707M.Deck = function (deckNumbers, offset) {
   components.Deck.call(this, deckNumbers);
 
+  this.jogTimer = 0; // Timer for resetting pitch bend
+  this.wheelTouched = false; // Track whether platter TOP is touched
+  this.wheelReleased = false; // Track if platter was released
+
   this.slipModeButton = new Roland707M.SlipModeButton({
     midi: [0x90 + offset, 0xf],
     shiftOffset: -8,
@@ -473,93 +495,103 @@ Roland707M.Deck = function (deckNumbers, offset) {
   });
 
   // ============================= JOG WHEELS =================================
+  // Simpler, more responsive jog wheel implementation with 1:1 feel
+
   this.wheelTouch = function (channel, control, value, _status, _group) {
+    const deckNum = script.deckFromGroup(this.currentDeck);
+
     if (value === 0x7f && !this.isShifted) {
-      const alpha = 1.0 / 8;
-      const beta = alpha / 32;
-      engine.scratchEnable(
-        script.deckFromGroup(this.currentDeck),
-        512,
-        45,
-        alpha,
-        beta,
-      );
+      // Normal scratch mode (wheel touched without SHIFT)
+      this.wheelTouched = true;
+      this.wheelReleased = false;
+      const alpha = 1.0; // Responsiveness (1/8 is good for direct control)
+      const beta = alpha / 80; // Inertia/smoothing (lower = smoother deceleration)
+      const rpm = 33 + 1 / 3; // 33.33 RPM for realistic vinyl feel
+
+      engine.scratchEnable(deckNum, 128, rpm, alpha, beta);
+    } else if (value === 0x7f && this.isShifted) {
+      // SHIFT + wheel touched = fast search mode
+      this.wheelTouched = true;
+      this.wheelReleased = false;
+      // Don't enable scratching, we'll handle search in wheelTurn
     } else {
-      // If button up
-      engine.scratchDisable(script.deckFromGroup(this.currentDeck));
+      // Wheel released - mark as released, wheelTurn will clear wheelTouched when stopped
+      this.wheelReleased = true;
+      engine.scratchDisable(deckNum);
     }
   };
 
   this.wheelTurn = function (channel, control, value, _status, _group) {
-    // When the jog wheel is turned in clockwise direction, value is
-    // greater than 64 (= 0x40). If it's turned in counter-clockwise
-    // direction, the value is smaller than 64.
-    const newValue = value - 64;
-    const deck = script.deckFromGroup(this.currentDeck);
-    if (engine.isScratching(deck)) {
-      engine.scratchTick(deck, newValue); // Scratch!
-    } else if (this.isShifted) {
-      const oldPos = engine.getValue(this.currentDeck, "playposition");
-      // Since ‘playposition’ is normalized to unity, we need to scale by
-      // song duration in order for the jog wheel to cover the same amount
-      // of time given a constant turning angle.
+    // MIDI value: 1-127, where 64 is center (no movement)
+    // Values > 64 = clockwise, values < 64 = counter-clockwise
+    const deckNum = script.deckFromGroup(this.currentDeck);
+    const delta = value - 64;
+
+    // Check if wheel has stopped moving (value == 0x3F means stopped)
+    // Only reset wheelTouched if the platter was actually released
+    if (value === 0x3f && this.wheelTouched && this.wheelReleased) {
+      // Wheel stopped moving after release - switch to pitch bend mode
+      this.wheelTouched = false;
+      this.wheelReleased = false;
+    }
+
+    if (this.isShifted) {
+      // Fast search mode (SHIFT held - works with or without touching platter)
+      const currentPos = engine.getValue(this.currentDeck, "playposition");
       const duration = engine.getValue(this.currentDeck, "duration");
-      const newPos = Math.max(
-        0,
-        oldPos + (newValue * Roland707M.stripSearchScaling) / duration,
-      );
-      engine.setValue(this.currentDeck, "playposition", newPos); // Strip search
+
+      if (duration > 0) {
+        const newPos = Math.max(
+          0,
+          Math.min(1, currentPos + (delta * Roland707M.searchScale) / duration),
+        );
+        engine.setValue(this.currentDeck, "playposition", newPos);
+      }
+    } else if (this.wheelTouched) {
+      // Scratch mode - platter TOP is touched (we received a touch message)
+      // Direct 1:1 mapping - the delta value directly controls scratch
+      engine.scratchTick(deckNum, delta * Roland707M.scratchScale);
     } else {
-      engine.setValue(this.currentDeck, "jog", newValue); // Pitch bend
+      // Pitch bend mode (outer ring, no touch, no SHIFT)
+      // Use rate_temp for zero inertia, timer to stop when no MIDI received
+
+      // Clear any existing timer
+      if (this.jogTimer !== 0) {
+        engine.stopTimer(this.jogTimer);
+        this.jogTimer = 0;
+      }
+
+      if (delta > 0) {
+        // Turning clockwise - speed up
+        engine.setValue(this.currentDeck, "rate_temp_down", 0);
+        engine.setValue(
+          this.currentDeck,
+          "rate_temp_up",
+          delta * Roland707M.jogScale * 0.01,
+        );
+      } else if (delta < 0) {
+        // Turning counter-clockwise - slow down
+        engine.setValue(this.currentDeck, "rate_temp_up", 0);
+        engine.setValue(
+          this.currentDeck,
+          "rate_temp_down",
+          Math.abs(delta) * Roland707M.jogScale * 0.01,
+        );
+      }
+
+      // Set a very short timer to reset rate if no more MIDI received
+      // This gives instant stop when you stop moving the wheel
+      this.jogTimer = engine.beginTimer(
+        20,
+        () => {
+          engine.setValue(this.currentDeck, "rate_temp_up", 0);
+          engine.setValue(this.currentDeck, "rate_temp_down", 0);
+          this.jogTimer = 0;
+        },
+        true,
+      );
     }
   };
-
-  /* Platter Spin LED Indicator on Jog Wheels
-   *
-   * The Controller features a LED indicator that imitates a spinning
-   * platter when the deck is playing and also shows to position inside a
-   * bar.
-   *
-   * LED indicator values:
-   * - 0x00 - 0x1F: Beat 0 (downbeat) to 1
-   * - 0x20 - 0x3F: Beat 1 to 2
-   * - 0x40 - 0x5F: Beat 2 to 3
-   * - 0x60 - 0x7F: Beat 3 (upbeat) to 0 (next downbeat)
-   *
-   * TODO: Add proper bar support for the LED indicators
-   *
-   * Mixxx currently does not support bar detection, so we don't know which
-   * of the 4 beats in a we are on. This has been worked around by counting
-   * beats manually, but this is error prone and does not support moving
-   * backwards in a track, has problems with loops, does not detect hotcue
-   * jumps and does not indicate the downbeat (obviously).
-   *
-   * See Launchpad issue: https://github.com/mixxxdj/mixxx/issues/5218
-   */
-  this.beatIndex = 0;
-  this.lastBeatDistance = 0;
-  engine.makeConnection(
-    this.currentDeck,
-    "beat_distance",
-    function (value) {
-      // Check if we're already in front of the next beat.
-      if (value < this.lastBeatDistance) {
-        this.beatIndex = (this.beatIndex + 1) % 4;
-      }
-      this.lastBeatDistance = value;
-
-      // Since deck indices start with 1, we use 0xAF + deck for the status
-      // byte, so that we 0xB0 for the first deck.
-      const status = 0xaf + script.deckFromGroup(this.currentDeck);
-
-      // Send a value between 0x00 and 0x7F to set jog wheel LED indicator
-      midi.sendShortMsg(
-        status,
-        0x06,
-        Math.round(0x1f * value + 0x20 * this.beatIndex),
-      );
-    }.bind(this),
-  );
 
   // ========================== PERFORMANCE PADS ==============================
 
