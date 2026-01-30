@@ -339,12 +339,14 @@ Roland707M.browseEncoder = new components.Encoder({
 });
 
 Roland707M.backButton = new components.Button({
-  // TODO: Map the BACK button
   midi: [0x9f, 0x07],
-  shiftOffset: 11,
-  sendShifted: true,
-  shiftControl: true,
-  type: undefined,
+  group: "[Library]",
+  inKey: "MoveFocus",
+  input: function (channel, control, value, status, _group) {
+    if (this.isPress(channel, control, value, status)) {
+      engine.setValue(this.group, this.inKey, 1);
+    }
+  },
 });
 
 Roland707M.addPrepareButton = new components.Button({
