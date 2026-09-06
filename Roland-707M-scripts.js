@@ -2182,16 +2182,14 @@ Roland707M.ManualLoopMode = function (deck, offset) {
     on: padColor,
     off: Roland707M.PadColor.OFF,
     input: function (channel, control, value, status, group) {
-      if (value > 0) {
-        components.Button.prototype.input.call(
-          this,
-          channel,
-          control,
-          0x7f,
-          status,
-          group,
-        );
-      }
+      components.Button.prototype.input.call(
+        this,
+        channel,
+        control,
+        value,
+        status,
+        group,
+      );
     },
   });
 
@@ -2204,42 +2202,38 @@ Roland707M.ManualLoopMode = function (deck, offset) {
     on: padColor,
     off: Roland707M.PadColor.OFF,
     input: function (channel, control, value, status, group) {
-      if (value > 0) {
-        components.Button.prototype.input.call(
-          this,
-          channel,
-          control,
-          0x7f,
-          status,
-          group,
-        );
-      }
+      components.Button.prototype.input.call(
+        this,
+        channel,
+        control,
+        value,
+        status,
+        group,
+      );
     },
   });
 
-  // Pad 7 (0x1A) - Beatloop Toggle
+  // Pad 7 (0x1A) - Loop Exit
   this.pads[6] = new components.Button({
     midi: [0x94 + offset, 0x1a],
     group: deck.currentDeck,
-    key: "beatloop_activate",
+    key: "reloop_exit",
     type: components.Button.prototype.types.push,
     on: padColor,
     off: padColor + Roland707M.PadColor.DIM_MODIFIER,
     input: function (channel, control, value, status, group) {
-      if (value > 0) {
-        components.Button.prototype.input.call(
-          this,
-          channel,
-          control,
-          0x7f,
-          status,
-          group,
-        );
-      }
+      components.Button.prototype.input.call(
+        this,
+        channel,
+        control,
+        value,
+        status,
+        group,
+      );
     },
   });
 
-  // Pad 8 (0x1B) - Reloop Toggle
+  // Pad 8 (0x1B) - Loop On/Off
   this.pads[7] = new components.Button({
     midi: [0x94 + offset, 0x1b],
     group: deck.currentDeck,
@@ -2248,16 +2242,14 @@ Roland707M.ManualLoopMode = function (deck, offset) {
     on: padColor,
     off: padColor + Roland707M.PadColor.DIM_MODIFIER,
     input: function (channel, control, value, status, group) {
-      if (value > 0) {
-        components.Button.prototype.input.call(
-          this,
-          channel,
-          control,
-          0x7f,
-          status,
-          group,
-        );
-      }
+      components.Button.prototype.input.call(
+        this,
+        channel,
+        control,
+        value,
+        status,
+        group,
+      );
     },
   });
 
