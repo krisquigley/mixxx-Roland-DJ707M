@@ -1724,6 +1724,10 @@ Roland707M.PadSection.prototype.setPadMode = function (control) {
   // controlled by Mixxx. These modes are represented by the value null.
   // Hence, we only need to change LEDs and (dis-)connect components if
   // this.currentMode or newMode is not null.
+  if (this.currentMode && this.currentMode.disconnectLoopControlLights) {
+    this.currentMode.disconnectLoopControlLights();
+  }
+
   if (this.currentMode) {
     // Disable the mode button LED of the currently active mode
     midi.sendShortMsg(0x94 + this.offset, this.currentMode.ledControl, 0x00);
@@ -1761,6 +1765,13 @@ Roland707M.PadSection.prototype.setPadMode = function (control) {
     });
   }
   this.currentMode = newMode;
+
+  if (this.currentMode && this.currentMode.connectLoopControlLights) {
+    this.currentMode.connectLoopControlLights();
+  }
+  if (this.currentMode && this.currentMode.updateLoopControlLights) {
+    this.currentMode.updateLoopControlLights();
+  }
 };
 
 Roland707M.PadSection.prototype.padPressed = function (
@@ -2123,6 +2134,7 @@ Roland707M.ManualLoopMode = function (deck, offset) {
   this.ledControl = Roland707M.PadMode.MANUALLOOP;
   this.color = Roland707M.PadColor.YELLOW;
   var padColor = this.color;
+  const manualLoopMode = this;
 
   this.pads = [];
 
@@ -2230,6 +2242,7 @@ Roland707M.ManualLoopMode = function (deck, offset) {
         status,
         group,
       );
+      manualLoopMode.updateLoopControlLights();
     },
   });
 
@@ -2250,8 +2263,38 @@ Roland707M.ManualLoopMode = function (deck, offset) {
         status,
         group,
       );
+      manualLoopMode.updateLoopControlLights();
     },
   });
+
+  this.updateLoopControlLights = function () {
+    const loopEnabled = engine.getValue(deck.currentDeck, "loop_enabled");
+    const dimColor = padColor + Roland707M.PadColor.DIM_MODIFIER;
+
+    // Loop EXIT is only useful while currently inside an active loop, so keep
+    // it off until there is a loop to exit. Loop ON/OFF remains dimmed so it
+    // is still discoverable for re-entering/toggling loop playback.
+    this.pads[6].send(loopEnabled ? padColor : Roland707M.PadColor.OFF);
+    this.pads[7].send(loopEnabled ? padColor : dimColor);
+  };
+
+  this.connectLoopControlLights = function () {
+    this.disconnectLoopControlLights();
+    this.updateLoopControlLights();
+
+    // Some loop controls do not reliably emit output callbacks for every
+    // state transition, so refresh while Manual Loop mode is active.
+    this.loopControlLightTimer = engine.beginTimer(100, function () {
+      manualLoopMode.updateLoopControlLights();
+    });
+  };
+
+  this.disconnectLoopControlLights = function () {
+    if (this.loopControlLightTimer) {
+      engine.stopTimer(this.loopControlLightTimer);
+      this.loopControlLightTimer = 0;
+    }
+  };
 
   // Parameter buttons to adjust loop length
   this.paramMinusButton = new components.Button({
