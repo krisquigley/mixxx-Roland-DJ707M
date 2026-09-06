@@ -61,6 +61,8 @@ Roland707M.searchScale = 2.0; // Fast search sensitivity when SHIFT is held (2x 
 Roland707M.tempoRange = [0.08, 0.16, 0.5];
 Roland707M.autoShowFourDecks = true;
 Roland707M.trsGroup = "Auxiliary1"; // TR-S input
+Roland707M.trsInputEnabled = false;
+Roland707M.trsAuxControlDeck = 3; // Use CH3 fader/PFL as TR aux controls while CH3 is set to TR.
 
 Roland707M.deckTempoSync = {
   enabled: true,
@@ -221,8 +223,12 @@ Roland707M.init = function () {
     shift: function () {
       this.inKey = "eject";
     },
-    input: function (channel, control, value, status, _group) {
-      // Use the current group (which is updated by deck toggle button)
+    input: function (channel, control, value, status, group) {
+      // The DJ-707M sends distinct LOAD notes for Deck 1 vs Deck 3, so trust
+      // the XML group for the received MIDI message. Temporarily assign it to
+      // this component because components.Button uses this.group internally.
+      const originalGroup = this.group;
+      this.group = group;
       components.Button.prototype.input.call(
         this,
         channel,
@@ -231,6 +237,7 @@ Roland707M.init = function () {
         status,
         this.group,
       );
+      this.group = originalGroup;
     },
   });
   Roland707M.deck3Button = new Roland707M.DeckToggleButton({
@@ -367,6 +374,12 @@ Roland707M.autoShowDecks = function (_value, _group, _control) {
 
 Roland707M.shutdown = function () {
   Roland707M.deckTempoSync.disconnect();
+  Roland707M.sampler.disconnectSyncDeckBpm();
+  Roland707M.sampler.setSyncLight(false);
+  if (Roland707M.sampler.playbackTimer) {
+    engine.stopTimer(Roland707M.sampler.playbackTimer);
+    Roland707M.sampler.playbackTimer = 0;
+  }
 };
 
 Roland707M.browseEncoder = new components.Encoder({
@@ -562,6 +575,11 @@ Roland707M.crossfader.setReverse = function (
   engine.setValue("[Mixer Profile]", "xFaderReverse", value === 0x00 ? 1 : 0);
 };
 
+Roland707M.setTrsInputEnabled = function (enabled) {
+  Roland707M.trsInputEnabled = enabled;
+  engine.setValue("[" + Roland707M.trsGroup + "]", "enabled", enabled ? 1 : 0);
+};
+
 Roland707M.setChannelInput = function (
   channel,
   control,
@@ -569,14 +587,48 @@ Roland707M.setChannelInput = function (
   _status,
   _group,
 ) {
-  const number = channel === 0x00 ? 0 : 1;
+  const number = channel & 0x0f;
+  if (number > 3) {
+    return;
+  }
+
   const channelgroup = "[Channel" + (number + 1) + "]";
+
+  if (number === 2) {
+    // CH3's physical switch is PC/LINE/TR, but hardware reports the positions
+    // in reverse order: TR=0x00, LINE=0x01, PC=0x02.
+    switch (value) {
+      case 0x00: // TR
+        // In Serato/controller mode the internal TR-S audio returns to Mixxx
+        // as the configured auxiliary input, not as Deck 3 passthrough audio.
+        engine.setValue(channelgroup, "passthrough", 0);
+        Roland707M.setTrsInputEnabled(true);
+
+        // The hardware manual says TR operation requires the left deck to be
+        // switched to Deck 3. Do that automatically when CH3 is set to TR.
+        if (Roland707M.deck3Button) {
+          Roland707M.deck3Button.secondaryDeck = true;
+          Roland707M.deck3Button.trigger();
+        }
+        break;
+      case 0x01: // LINE
+        engine.setValue(channelgroup, "passthrough", 1);
+        Roland707M.setTrsInputEnabled(false);
+        break;
+      case 0x02: // PC
+        engine.setValue(channelgroup, "passthrough", 0);
+        Roland707M.setTrsInputEnabled(false);
+        break;
+    }
+    return;
+  }
+
   switch (value) {
     case 0x00: // PC
       engine.setValue(channelgroup, "passthrough", 0);
       break;
     case 0x01: // LINE
-    case 0x02: // PHONO
+    case 0x02: // PHONO on CH1/2, OSC on CH4
       engine.setValue(channelgroup, "passthrough", 1);
       break;
   }
@@ -892,6 +944,34 @@ Roland707M.Deck = function (deckNumbers, offset) {
     type: components.Button.prototype.types.toggle,
     inKey: "pfl",
     outKey: "pfl",
+    input: function (channel, control, value, status, group) {
+      if (
+        Roland707M.trsInputEnabled &&
+        deckNumbers === Roland707M.trsAuxControlDeck
+      ) {
+        const originalGroup = this.group;
+        this.group = "[" + Roland707M.trsGroup + "]";
+        components.Button.prototype.input.call(
+          this,
+          channel,
+          control,
+          value,
+          status,
+          this.group,
+        );
+        this.group = originalGroup;
+        return;
+      }
+
+      components.Button.prototype.input.call(
+        this,
+        channel,
+        control,
+        value,
+        status,
+        group,
+      );
+    },
   });
 
   this.tapBPM = new components.Button({
@@ -926,6 +1006,41 @@ Roland707M.Deck = function (deckNumbers, offset) {
     midi: [0xb0 + offset, 0x1c],
     group: "[Channel" + deckNumbers + "]",
     inKey: "volume",
+    inputMSB: function (channel, control, value, status, group) {
+      if (
+        Roland707M.trsInputEnabled &&
+        deckNumbers === Roland707M.trsAuxControlDeck
+      ) {
+        engine.setValue("[" + Roland707M.trsGroup + "]", "volume", value / 127);
+        return;
+      }
+
+      components.Pot.prototype.inputMSB.call(
+        this,
+        channel,
+        control,
+        value,
+        status,
+        group,
+      );
+    },
+    inputLSB: function (channel, control, value, status, group) {
+      if (
+        Roland707M.trsInputEnabled &&
+        deckNumbers === Roland707M.trsAuxControlDeck
+      ) {
+        return;
+      }
+
+      components.Pot.prototype.inputLSB.call(
+        this,
+        channel,
+        control,
+        value,
+        status,
+        group,
+      );
+    },
   });
 
   this.vuMeter = new components.Component({
@@ -1062,6 +1177,49 @@ Roland707M.Sampler = function () {
    */
   components.ComponentContainer.call(this);
   this.syncDeck = -1;
+  this.trBpm = 120;
+  this.playbackTimer = 0;
+  this.syncDeckBpmConnection = null;
+
+  this.sendTrTempo = function (bpm) {
+    // Minimum BPM is 5.0 (0xEA 0x32 0x00), maximum BPM is 800.0 (0xEA 0x40 0x3e).
+    if (!(bpm >= 5 && bpm <= 800)) {
+      return;
+    }
+
+    this.trBpm = bpm;
+    const bpmValue = Math.round(bpm * 10);
+    midi.sendShortMsg(0xea, bpmValue & 0x7f, (bpmValue >> 7) & 0x7f);
+  };
+
+  this.restartPlaybackTimer = function () {
+    if (this.playbackTimer) {
+      engine.stopTimer(this.playbackTimer);
+      this.playbackTimer = 0;
+    }
+
+    if (!(this.trBpm >= 5 && this.trBpm <= 800)) {
+      return;
+    }
+
+    this.playbackCounter = 1;
+    const barDurationMs = Math.max(1, Math.round((4 * 60 * 1000) / this.trBpm));
+    this.playbackTimer = engine.beginTimer(barDurationMs, () => {
+      midi.sendShortMsg(0xba, 0x02, this.playbackCounter);
+      this.playbackCounter = (this.playbackCounter % 4) + 1;
+    });
+  };
+
+  this.disconnectSyncDeckBpm = function () {
+    if (this.syncDeckBpmConnection && this.syncDeckBpmConnection.disconnect) {
+      this.syncDeckBpmConnection.disconnect();
+    }
+    this.syncDeckBpmConnection = null;
+  };
+
+  this.setSyncLight = function (enabled) {
+    midi.sendShortMsg(0x9f, 0x53, enabled ? 0x7f : 0x00);
+  };
 
   const getActiveDeck = function () {
     const deckvolume = new Array(0, 0, 0, 0);
@@ -1086,30 +1244,45 @@ Roland707M.Sampler = function () {
     if (value !== 0x7f) {
       return;
     }
-    const isShifted = control === 0x55;
-    if (isShifted || this.syncDeck >= 0) {
-      this.syncDeck = -1;
-    } else {
-      const deck = getActiveDeck();
-      if (deck < 0) {
-        return;
-      }
-      const bpm = engine.getValue("[Channel" + (deck + 1) + "]", "bpm");
 
-      // Minimum BPM is 5.0 (0xEA 0x32 0x00), maximum BPM is 800.0 (0xEA 0x40 0x3e).
-      if (!(bpm >= 5 && bpm <= 800)) {
-        return;
-      }
-      const bpmValue = Math.round(bpm * 10);
-      midi.sendShortMsg(0xea, bpmValue & 0x7f, (bpmValue >> 7) & 0x7f);
-      this.syncDeck = deck;
+    const isShifted = control === 0x55;
+    if (isShifted) {
+      this.disconnectSyncDeckBpm();
+      this.syncDeck = -1;
+      this.setSyncLight(false);
+      return;
     }
+
+    const deck = getActiveDeck();
+    if (deck < 0) {
+      return;
+    }
+
+    const group = "[Channel" + (deck + 1) + "]";
+    const syncToDeck = function () {
+      Roland707M.sampler.sendTrTempo(engine.getValue(group, "bpm"));
+      if (Roland707M.sampler.playbackTimer) {
+        Roland707M.sampler.restartPlaybackTimer();
+      }
+    };
+
+    syncToDeck();
+    this.syncDeck = deck;
+    this.disconnectSyncDeckBpm();
+    this.syncDeckBpmConnection = engine.makeConnection(group, "bpm", syncToDeck);
+    this.setSyncLight(true);
   };
 
   this.bpmKnobTurned = function (channel, control, value, _status, _group) {
+    const bpm = ((value << 7) | control) / 10;
+    this.sendTrTempo(bpm);
+
     if (this.syncDeck >= 0) {
-      const bpm = ((value << 7) | control) / 10;
       engine.setValue("[Channel" + (this.syncDeck + 1) + "]", "bpm", bpm);
+    }
+
+    if (this.playbackTimer) {
+      this.restartPlaybackTimer();
     }
   };
 
@@ -1121,14 +1294,11 @@ Roland707M.Sampler = function () {
     _group,
   ) {
     if (status === 0xfa) {
-      this.playbackCounter = 1;
-      this.playbackTimer = engine.beginTimer(500, () => {
-        midi.sendShortMsg(0xba, 0x02, this.playbackCounter);
-        this.playbackCounter = (this.playbackCounter % 4) + 1;
-      });
+      this.restartPlaybackTimer();
     } else if (status === 0xfc) {
       if (this.playbackTimer) {
         engine.stopTimer(this.playbackTimer);
+        this.playbackTimer = 0;
       }
     }
   };
@@ -1253,6 +1423,8 @@ Roland707M.PadMode = {
   SLICERLOOP: 0x08, // Shift+Slicer
   SAMPLER: 0x09,
   PITCHPLAY: 0x0f, // Shift+Sampler
+  OSC_SAMPLER: 0x0b,
+  OSC_VELOCITY: 0x0c,
 };
 
 Roland707M.PadColor = {
@@ -1473,6 +1645,15 @@ Roland707M.PadSection.prototype.controlToPadMode = function (control) {
       break;
     case Roland707M.PadMode.SAMPLER:
       mode = this.modes.sampler;
+      break;
+    case Roland707M.PadMode.OSC_SAMPLER:
+    case Roland707M.PadMode.OSC_VELOCITY:
+      // Deck 4 OSC sound effects are generated internally by the hardware.
+      // Use null to disconnect Mixxx's previous pad mode so OSC pad presses
+      // do not accidentally trigger stale Mixxx hotcues/loops/samplers.
+      if (this.offset === 3) {
+        mode = null;
+      }
       break;
     case Roland707M.PadMode.PITCHPLAY:
       mode = this.modes.pitchplay;
