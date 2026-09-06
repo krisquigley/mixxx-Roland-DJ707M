@@ -62,6 +62,129 @@ Roland707M.tempoRange = [0.08, 0.16, 0.5];
 Roland707M.autoShowFourDecks = true;
 Roland707M.trsGroup = "Auxiliary1"; // TR-S input
 
+Roland707M.deckTempoSync = {
+  enabled: true,
+
+  // The DJ-707M MIDI implementation chart documents Pitch Bend on
+  // channels 1-4 as per-deck "Time Stamp / Tempo". Empirically, the
+  // controller accepts deck BPM encoded as a 14-bit value of round(BPM * 10).
+  minBpmDelta: 0.1,
+  minSendIntervalMs: 250,
+  debug: false,
+
+  lastSent: {},
+  connections: [],
+  timerId: 0,
+};
+
+Roland707M.deckTempoSync.log = function (msg) {
+  if (this.debug) {
+    console.log("DJ707M deckTempoSync: " + msg);
+  }
+};
+
+Roland707M.deckTempoSync.pitchBendStatusForDeck = function (deckIndex) {
+  // deckIndex: 0..3 -> MIDI channels 1..4 -> 0xE0..0xE3
+  return 0xe0 + deckIndex;
+};
+
+Roland707M.deckTempoSync.sendPitchBend14 = function (status, value14, label) {
+  value14 = Math.max(0, Math.min(0x3fff, Math.round(value14)));
+  const lsb = value14 & 0x7f;
+  const msb = (value14 >> 7) & 0x7f;
+
+  midi.sendShortMsg(status, lsb, msb);
+  this.log(
+    label +
+      " status=0x" +
+      status.toString(16) +
+      " value=" +
+      value14 +
+      " lsb=" +
+      lsb +
+      " msb=" +
+      msb,
+  );
+};
+
+Roland707M.deckTempoSync.sendBpm10 = function (status, bpm, key) {
+  if (!(bpm >= 5 && bpm <= 800)) {
+    return;
+  }
+
+  const now = Date.now();
+  const state = this.lastSent[key] || { bpm: -1, time: 0 };
+
+  if (
+    Math.abs(bpm - state.bpm) < this.minBpmDelta &&
+    now - state.time < this.minSendIntervalMs
+  ) {
+    return;
+  }
+
+  const bpmValue = Math.round(bpm * 10);
+  this.sendPitchBend14(status, bpmValue, key + " bpm=" + bpm.toFixed(2));
+  this.lastSent[key] = { bpm: bpm, time: now };
+};
+
+Roland707M.deckTempoSync.sendDeckTempo = function (deckIndex) {
+  const group = "[Channel" + (deckIndex + 1) + "]";
+  const bpm = engine.getValue(group, "bpm");
+  const status = this.pitchBendStatusForDeck(deckIndex);
+
+  this.sendBpm10(status, bpm, "deck" + (deckIndex + 1));
+};
+
+Roland707M.deckTempoSync.sendAllDeckTempos = function () {
+  for (let i = 0; i < 4; i++) {
+    this.sendDeckTempo(i);
+  }
+};
+
+Roland707M.deckTempoSync.disconnect = function () {
+  if (this.timerId) {
+    engine.stopTimer(this.timerId);
+    this.timerId = 0;
+  }
+
+  this.connections.forEach(function (connection) {
+    if (connection && connection.disconnect) {
+      connection.disconnect();
+    }
+  });
+  this.connections = [];
+};
+
+Roland707M.deckTempoSync.init = function () {
+  if (!this.enabled) {
+    return;
+  }
+
+  this.disconnect();
+  this.lastSent = {};
+
+  for (let i = 0; i < 4; i++) {
+    const group = "[Channel" + (i + 1) + "]";
+    const sendDeckTempo = function () {
+      Roland707M.deckTempoSync.sendDeckTempo(i);
+    };
+
+    this.connections.push(engine.makeConnection(group, "bpm", sendDeckTempo));
+    this.connections.push(engine.makeConnection(group, "play", sendDeckTempo));
+    this.connections.push(
+      engine.makeConnection(group, "track_loaded", sendDeckTempo),
+    );
+  }
+
+  // Refresh periodically so the hardware receives the current tempo after
+  // hardware mode changes even when Mixxx BPM controls have not changed.
+  this.timerId = engine.beginTimer(1000, function () {
+    Roland707M.deckTempoSync.sendAllDeckTempos();
+  });
+
+  this.sendAllDeckTempos();
+};
+
 ///////////
 // Code. //
 ///////////
@@ -228,6 +351,8 @@ Roland707M.init = function () {
 
   // Initialize browseEncoder to unshifted state
   Roland707M.browseEncoder.unshift();
+
+  Roland707M.deckTempoSync.init();
 };
 
 Roland707M.autoShowDecks = function (_value, _group, _control) {
@@ -240,7 +365,9 @@ Roland707M.autoShowDecks = function (_value, _group, _control) {
   engine.setValue("[Master]", "show_4decks", anyLoaded);
 };
 
-Roland707M.shutdown = function () {};
+Roland707M.shutdown = function () {
+  Roland707M.deckTempoSync.disconnect();
+};
 
 Roland707M.browseEncoder = new components.Encoder({
   longPressTimer: 0,
