@@ -2188,40 +2188,68 @@ Roland707M.ManualLoopMode = function (deck, offset) {
   // Pad 5 (0x18) - Loop In
   this.pads[4] = new components.Button({
     midi: [0x94 + offset, 0x18],
+    sendShifted: true,
+    shiftControl: true,
+    shiftOffset: 8,
     group: deck.currentDeck,
     key: "loop_in",
     type: components.Button.prototype.types.push,
     on: padColor,
     off: Roland707M.PadColor.OFF,
-    input: function (channel, control, value, status, group) {
-      components.Button.prototype.input.call(
-        this,
-        channel,
-        control,
-        value,
-        status,
-        group,
-      );
+    unshift: function () {
+      this.input = function (channel, control, value, status, group) {
+        components.Button.prototype.input.call(
+          this,
+          channel,
+          control,
+          value,
+          status,
+          group,
+        );
+        manualLoopMode.updateLoopControlLights();
+      };
+    },
+    shift: function () {
+      this.input = function (_channel, _control, value, _status, group) {
+        if (value > 0) {
+          engine.setValue(group, "loop_start_position", -1);
+          manualLoopMode.updateLoopControlLights();
+        }
+      };
     },
   });
 
   // Pad 6 (0x19) - Loop Out
   this.pads[5] = new components.Button({
     midi: [0x94 + offset, 0x19],
+    sendShifted: true,
+    shiftControl: true,
+    shiftOffset: 8,
     group: deck.currentDeck,
     key: "loop_out",
     type: components.Button.prototype.types.push,
     on: padColor,
     off: Roland707M.PadColor.OFF,
-    input: function (channel, control, value, status, group) {
-      components.Button.prototype.input.call(
-        this,
-        channel,
-        control,
-        value,
-        status,
-        group,
-      );
+    unshift: function () {
+      this.input = function (channel, control, value, status, group) {
+        components.Button.prototype.input.call(
+          this,
+          channel,
+          control,
+          value,
+          status,
+          group,
+        );
+        manualLoopMode.updateLoopControlLights();
+      };
+    },
+    shift: function () {
+      this.input = function (_channel, _control, value, _status, group) {
+        if (value > 0) {
+          engine.setValue(group, "loop_end_position", -1);
+          manualLoopMode.updateLoopControlLights();
+        }
+      };
     },
   });
 
