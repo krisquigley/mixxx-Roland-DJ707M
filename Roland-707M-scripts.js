@@ -2269,7 +2269,13 @@ Roland707M.ManualLoopMode = function (deck, offset) {
 
   this.updateLoopControlLights = function () {
     const loopEnabled = engine.getValue(deck.currentDeck, "loop_enabled");
+    const loopStart = engine.getValue(deck.currentDeck, "loop_start_position");
+    const loopEnd = engine.getValue(deck.currentDeck, "loop_end_position");
     const dimColor = padColor + Roland707M.PadColor.DIM_MODIFIER;
+
+    // Loop IN/OUT indicate whether Mixxx has loop boundary points set.
+    this.pads[4].send(loopStart >= 0 ? padColor : dimColor);
+    this.pads[5].send(loopEnd >= 0 ? padColor : dimColor);
 
     // Loop EXIT is only useful while currently inside an active loop, so keep
     // it off until there is a loop to exit. Loop ON/OFF remains dimmed so it
